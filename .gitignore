@@ -1,0 +1,12 @@
+.DS_Store
+Thumbs.db
+
+*.log
+
+node_modules/
+
+/app.js
+
+
+# google api key
+src/google_api_key.js

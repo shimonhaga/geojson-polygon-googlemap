@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>東京23区 With H3</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+html, body, #map-canvas {
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+  position: relative;
+  z-index: 0;
+}
+#map-nav {
+  position: absolute;
+  z-index: 1000;
+  top: 60px;
+  left: 10px;
+  width: 200px;
+  height: 80px;
+  padding: 5px;
+  background-color: rgba(255, 255, 255, .8);
+}
+#map-polygon {
+  position: absolute;
+  z-index: 1000;
+  top: 150px;
+  left: 10px;
+  width: 200px;
+  height: 100px;
+  padding: 5px;
+  background-color: rgba(255, 255, 255, .9);
+  border: solid 1px #000;
+}
+    </style>
+  </head>
+
+  <body>
+    <div id="map-canvas"></div>
+    <div id="map-nav">
+          <h2>地域選択</h2>
+          <select id="map-city-selection"></select>
+          <button id="map-city-display">display</button>
+      </div>
+    </div>
+    <textarea id="map-polygon"></textarea>
+    <script id="application" type="text/javascript" src="./app.js"></script>
+    <script id="google-map" type="text/javascript"></script>
+  </body>
+</html>
