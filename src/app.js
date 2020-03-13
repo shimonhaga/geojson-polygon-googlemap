@@ -7,7 +7,7 @@ const RESOLUTION = 9
 const ICON_SIZE = 2
 
 const CITIES = require('./city')
-const CITY_INDEX = 12
+const CENTER = { lat: 35.685121, lng: 139.752885 }
 
 let map
 let polygons = []
@@ -28,7 +28,7 @@ function initMap() {
     },
   }
   map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions)
-  const centerPosition = new google.maps.LatLng(35.685121, 139.752885)
+  const centerPosition = new google.maps.LatLng(CENTER)
   map.setCenter(centerPosition)
 
   // スタイル
@@ -102,6 +102,7 @@ function addEvent() {
 
 function drawCityPolygons(map, geoJson) {
   const cityPolygons = {}
+  const sqls = [];
   for ( const feature of geoJson.features ) {
     const cityName = feature.properties.N03_004
     const cityCoordinates = feature.geometry.coordinates[0]
@@ -110,8 +111,7 @@ function drawCityPolygons(map, geoJson) {
     const revCityCoordinates = cityCoordinates.map(function(cityCoordinate) { return [cityCoordinate[1], cityCoordinate[0]] })
 
     // SQL 用
-    const textForSql = 'POLYGON((' + revCityCoordinates.map(revCityCoordinate => revCityCoordinate.join(' ')).join(',') + ',' + revCityCoordinates[0].join(' ') + '))'
-    document.getElementById('map-polygon').value = textForSql
+    sqls.push('(' + revCityCoordinates.map(revCityCoordinate => revCityCoordinate.join(' ')).join(',') + ',' + revCityCoordinates[0].join(' ') + ')')
 
     // ポリゴン作成
     const cityPolygon = createPolygon(revCityCoordinates, '#000000')
@@ -123,6 +123,7 @@ function drawCityPolygons(map, geoJson) {
     }
     polygons.push(cityPolygon)
   }
+  document.getElementById('map-polygon').value = 'POLYGON(' + sqls.join(',') + ')'
   return cityPolygons
 }
 
