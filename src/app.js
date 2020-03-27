@@ -1,13 +1,9 @@
 const h3 = require("h3-js")
 const concaveman = require("concaveman")
 
-const RESOLUTION = 9
-// const RESOLUTION = 8
-// const RESOLUTION = 7
-
 const ICON_SIZE = 2
 
-const CITIES = require('./city')
+const CITIES = require('./tokyo-city')
 const CENTER = { lat: 35.685121, lng: 139.752885 }
 
 let map
@@ -66,10 +62,14 @@ function renederCitySelection(locale) {
 function addEvent() {
   const selection = document.getElementById('map-city-selection')
   const concavity = document.getElementById('map-city-concavity')
+  const resolution = document.getElementById('map-city-resolution')
+  const checkinner = document.getElementById('map-city-checkinner')
   const button = document.getElementById('map-city-display')
   button.addEventListener('click', function() {
     const cityIndex = selection.value
     const concavityValue = concavity.value
+    const resolutionValue = resolution.value * 1
+    const isCheckInner = !!(checkinner.value * 1)
 
     const selectedCity = CITIES[cityIndex]
 
@@ -99,7 +99,8 @@ function addEvent() {
     const cityPolygons = drawCityPolygons(map, geoJson, concavityValue)
 
     // 六角形
-    // drawHexagon(map, RESOLUTION, ringSize, centerCoordinate, cityPolygons)
+    console.log(resolution, resolutionValue)
+    drawHexagon(map, resolutionValue, ringSize, centerCoordinate, cityPolygons, isCheckInner)
   })
 }
 
@@ -137,7 +138,11 @@ function drawCityPolygons(map, geoJson, concavityValue) {
   return cityPolygons
 }
 
-function drawHexagon(map, resolution, ringSize, centerCoordinate, cityPolygons) {
+function drawHexagon(map, resolution, ringSize, centerCoordinate, cityPolygons, checkInner) {
+  if (!resolution || resolution < 1) {
+    return
+  }
+
   const radius = h3.edgeLength(resolution, h3.UNITS.m)
   const h3Index = h3.geoToH3(centerCoordinate[0], centerCoordinate[1], resolution)
   const kRings = h3.kRing(h3Index, ringSize)
@@ -152,23 +157,25 @@ function drawHexagon(map, resolution, ringSize, centerCoordinate, cityPolygons) 
 
     // 範囲内かどうか (h3.polyfill だと粗すぎて使えなかった)
     let isInner = false
-    for ( const cityName of Object.keys(cityPolygons) ) {
-      const polygons = cityPolygons[cityName]
-      let isInnerCity = checkInnerPolygons(centerCoordinate, polygons)
-      for ( const hexCoordinate of hexCoordinates ) {
+    if (checkInner) {
+      for ( const cityName of Object.keys(cityPolygons) ) {
+        const polygons = cityPolygons[cityName]
+        let isInnerCity = checkInnerPolygons(centerCoordinate, polygons)
+        for ( const hexCoordinate of hexCoordinates ) {
+          if (isInnerCity) {
+            break
+          }
+          isInnerCity = checkInnerPolygons(hexCoordinate, polygons)
+        }
         if (isInnerCity) {
-          break
+          if (innerCenterCoordinates[cityName]) {
+            innerCenterCoordinates[cityName].push(centerCoordinate)
+          } else {
+            innerCenterCoordinates[cityName] = [centerCoordinate]
+          }
         }
-        isInnerCity = checkInnerPolygons(hexCoordinate, polygons)
+        isInner = isInner || isInnerCity
       }
-      if (isInnerCity) {
-        if (innerCenterCoordinates[cityName]) {
-          innerCenterCoordinates[cityName].push(centerCoordinate)
-        } else {
-          innerCenterCoordinates[cityName] = [centerCoordinate]
-        }
-      }
-      isInner = isInner || isInnerCity
     }
 
     // 色
