@@ -1,4 +1,5 @@
 const h3 = require("h3-js")
+const concaveman = require("concaveman")
 
 const RESOLUTION = 9
 // const RESOLUTION = 8
@@ -64,9 +65,11 @@ function renederCitySelection(locale) {
 
 function addEvent() {
   const selection = document.getElementById('map-city-selection')
+  const concavity = document.getElementById('map-city-concavity')
   const button = document.getElementById('map-city-display')
   button.addEventListener('click', function() {
     const cityIndex = selection.value
+    const concavityValue = concavity.value
 
     const selectedCity = CITIES[cityIndex]
 
@@ -93,14 +96,14 @@ function addEvent() {
     markers.push(centerMarker);
 
     // 区のポリゴン
-    const cityPolygons = drawCityPolygons(map, geoJson)
+    const cityPolygons = drawCityPolygons(map, geoJson, concavityValue)
 
     // 六角形
-    drawHexagon(map, RESOLUTION, ringSize, centerCoordinate, cityPolygons)
+    // drawHexagon(map, RESOLUTION, ringSize, centerCoordinate, cityPolygons)
   })
 }
 
-function drawCityPolygons(map, geoJson) {
+function drawCityPolygons(map, geoJson, concavityValue) {
   const cityPolygons = {}
   const sqls = [];
   for ( const feature of geoJson.features ) {
@@ -109,16 +112,19 @@ function drawCityPolygons(map, geoJson) {
 
     // 国土地理院の lat lng は google api の並びと逆
     const revCityCoordinates = cityCoordinates.map(function(cityCoordinate) { return [cityCoordinate[1], cityCoordinate[0]] })
+    const cavedCityCoordinates = concavityValue && concavityValue > 0
+      ? concaveman(revCityCoordinates, concavityValue, 0)
+      : revCityCoordinates
 
     // SQL 用
-    coords = revCityCoordinates.map(revCityCoordinate => revCityCoordinate.join(' '))
+    coords = cavedCityCoordinates.map(revCityCoordinate => revCityCoordinate.join(' '))
     if (coords[0] !== coords[coords.length - 1]) {
       coords.push(coords[0])
     }
     sqls.push('(' + coords.join(',') + ')')
 
     // ポリゴン作成
-    const cityPolygon = createPolygon(revCityCoordinates, '#000000')
+    const cityPolygon = createPolygon(cavedCityCoordinates, '#000000')
     cityPolygon.setMap(map)
     if (cityPolygons[cityName]) {
       cityPolygons[cityName].push(cityPolygon)
