@@ -111,7 +111,11 @@ function drawCityPolygons(map, geoJson) {
     const revCityCoordinates = cityCoordinates.map(function(cityCoordinate) { return [cityCoordinate[1], cityCoordinate[0]] })
 
     // SQL 用
-    sqls.push('(' + revCityCoordinates.map(revCityCoordinate => revCityCoordinate.join(' ')).join(',') + ',' + revCityCoordinates[0].join(' ') + ')')
+    coords = revCityCoordinates.map(revCityCoordinate => revCityCoordinate.join(' '))
+    if (coords[0] !== coords[coords.length - 1]) {
+      coords.push(coords[0])
+    }
+    sqls.push('(' + coords.join(',') + ')')
 
     // ポリゴン作成
     const cityPolygon = createPolygon(revCityCoordinates, '#000000')
