@@ -3,8 +3,11 @@ const concaveman = require("concaveman")
 
 const ICON_SIZE = 2
 
-const CITIES = require('./tokyo-city')
-const CENTER = { lat: 35.685121, lng: 139.752885 }
+// const CITIES = require('./tokyo-city')
+// const CENTER = { lat: 35.685121, lng: 139.752885 }
+
+const CITIES = require('./fukuoka-city')
+const CENTER = { lat: 33.583708, lng: 130.447152 }
 
 let map
 let polygons = []
