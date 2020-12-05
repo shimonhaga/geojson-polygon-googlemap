@@ -1,20 +1,20 @@
 const h3 = require("h3-js")
 const concaveman = require("concaveman")
 
+const PREFECTURES = require('../geojson/')
+
 const ICON_SIZE = 2
-
-// const CITIES = require('./tokyo-city')
-// const CENTER = { lat: 35.685121, lng: 139.752885 }
-
-const CITIES = require('./fukuoka-city')
-const CENTER = { lat: 33.583708, lng: 130.447152 }
+const DEFAULT_CENTER = { lat: 35.685121, lng: 139.752885 }
 
 let map
 let polygons = []
 let markers = []
 function initMap() {
-  // プルダウン描画
-  renederCitySelection()
+  // 都道府県選択
+  renderPrefectureSelection()
+
+  // 初期都市
+  renderCitySelection(PREFECTURES.tokyo.geojson)
 
   // display ボタンにイベント追加
   addEvent()
@@ -28,7 +28,8 @@ function initMap() {
     },
   }
   map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions)
-  const centerPosition = new google.maps.LatLng(CENTER)
+
+  const centerPosition = new google.maps.LatLng(DEFAULT_CENTER)
   map.setCenter(centerPosition)
 
   // スタイル
@@ -51,35 +52,70 @@ function initMap() {
   map.setMapTypeId('my_map_style')
 }
 
-function renederCitySelection(locale) {
-  const selection = document.getElementById('map-city-selection')
-  CITIES.map((city, index) => {
+function renderPrefectureSelection() {
+  const selection = document.getElementById('map-prefecture-selection')
+  for (const [index, prefecture] of Object.entries(PREFECTURES)) {
     const option = document.createElement('option')
     option.setAttribute('id', index)
     option.setAttribute('value', index)
-    option.innerHTML = (locale && city.name[locale]) || city.name.ja
+    option.innerHTML = prefecture.name
     selection.appendChild(option)
+  }
+  selection.addEventListener('change', function() {
+    const prefecture = PREFECTURES[this.value]
+    renderCitySelection(prefecture.geojson)
+    map.setCenter(prefecture.center)
   })
 }
 
-function addEvent() {
+function renderCitySelection(geojson) {
+  const cities = {}
+  for (const [index, feature] of Object.entries(geojson.features)) {
+    const name = feature.properties.N03_002 + feature.properties.N03_003 + feature.properties.N03_004
+    if (cities[name]) {
+      cities[name].indexes.push(index)
+    } else {
+      cities[name] = {
+        name: name,
+        indexes: [index]
+      }
+    }
+  }
+
   const selection = document.getElementById('map-city-selection')
+  selection.textContent = null
+  for (const [index, city] of Object.entries(cities)) {
+    const option = document.createElement('option')
+    option.setAttribute('id', city.name)
+    option.setAttribute('value', JSON.stringify(city.indexes))
+    option.innerHTML = city.name
+    selection.appendChild(option)
+  }
+}
+
+function addEvent() {
+  const prefectureSelection = document.getElementById('map-prefecture-selection')
+  const citySelection = document.getElementById('map-city-selection')
   const concavity = document.getElementById('map-city-concavity')
   const resolution = document.getElementById('map-city-resolution')
+  const ringSize = document.getElementById('map-city-ring-size')
   const checkinner = document.getElementById('map-city-checkinner')
+
   const button = document.getElementById('map-city-display')
   button.addEventListener('click', function() {
-    const cityIndex = selection.value
+    const prefecture = PREFECTURES[prefectureSelection.value]
+    const cityName = citySelection.innerHtml
+    const cityIndexes = JSON.parse(citySelection.value)
     const concavityValue = concavity.value
     const resolutionValue = resolution.value * 1
+    const ringSizeValue = ringSize.value * 1
     const isCheckInner = !!(checkinner.value * 1)
 
-    const selectedCity = CITIES[cityIndex]
+    const features = []
+    for (const index of cityIndexes) {
+      features.push(prefecture.geojson.features[index])
+    }
 
-    const centerCoordinate = selectedCity.center
-    const geoJson = selectedCity.geo_json
-    const ringSize = selectedCity.ring_size
-    const zoom = selectedCity.zoom
 
     // クリア
     for (const polygon of polygons) {
@@ -92,26 +128,36 @@ function addEvent() {
     markers = []
 
     // 画面の中心
+    const centers = [ 0, 0 ];
+    let length = 0;
+    for (const feature of features) {
+      for (const coordinate of feature.geometry.coordinates[0]) {
+        centers[0] += coordinate[1]
+        centers[1] += coordinate[0]
+      }
+      length += feature.geometry.coordinates[0].length
+    }
+    const centerCoordinate = [ centers[0] / length, centers[1] / length ]
     const centerPosition = new google.maps.LatLng(centerCoordinate[0], centerCoordinate[1])
     map.setCenter(centerPosition)
-    map.setZoom(zoom)
     centerMarker = dropPin(centerCoordinate, '#000000')
-    markers.push(centerMarker);
+    markers.push(centerMarker)
+
+    // ズーム
+    // map.setZoom(zoom)
 
     // 区のポリゴン
-    const cityPolygons = drawCityPolygons(map, geoJson, concavityValue)
+    const cityPolygons = drawCityPolygons(map, cityName, features, concavityValue)
 
     // 六角形
-    console.log(resolution, resolutionValue)
-    drawHexagon(map, resolutionValue, ringSize, centerCoordinate, cityPolygons, isCheckInner)
+    drawHexagon(map, resolutionValue, ringSizeValue, centerCoordinate, cityPolygons, isCheckInner)
   })
 }
 
-function drawCityPolygons(map, geoJson, concavityValue) {
+function drawCityPolygons(map, cityName, features, concavityValue) {
   const cityPolygons = {}
   const sqls = [];
-  for ( const feature of geoJson.features ) {
-    const cityName = feature.properties.N03_004
+  for ( const feature of features ) {
     const cityCoordinates = feature.geometry.coordinates[0]
 
     // 国土地理院の lat lng は google api の並びと逆
