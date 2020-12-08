@@ -1,6 +1,6 @@
 # geojson-polygon-googlemap
 
-Drawing hexagon and polygon of Tokyo 23 cities on GoogleMap.
+Drawing hexagon and polygon on GoogleMap.
 
 Using H3 (By Uber) and GeoJson (By 国土地理院 http://nlftp.mlit.go.jp/ksj/ )
 
@@ -20,6 +20,10 @@ And replace text `YOUR API KEY` to your api key got from Google
 `yarn add`
 
 ## Compile script
+### with npm
+`npm run compile`
+
+### with yarn
 `yarn compile`
 
 ## Using

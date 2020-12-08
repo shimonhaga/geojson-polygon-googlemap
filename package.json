@@ -1,8 +1,12 @@
 {
-  "name": "h3",
-  "version": "1.0.0",
-  "description": "",
+  "name": "geojson-polygon-on-gmap",
+  "description": "Drawing hexagon and polygon on GoogleMap.",
+  "version": "2.0.0",
   "main": "app.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/shimonhaga/geojson-polygon-googlemap.git"
+  },
   "dependencies": {
     "@google/maps": "^0.5.5",
     "browserify": "^16.5.0",
@@ -13,6 +17,13 @@
   "scripts": {
     "compile": "browserify src/app.js -o app.js"
   },
-  "author": "shimon",
-  "license": "ISC"
+  "author": "Shimon Haga",
+  "license": "ISC",
+  "homepage": "https://shimon.biz",
+  "keywords": [
+    "geojson",
+    "google map",
+    "polygon",
+    "h3"
+  ]
 }
