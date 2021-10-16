@@ -4,6 +4,16 @@ module.exports = {
     geojson: require('./tokyo'),
     center: { lat: 35.685121, lng: 139.752885 },
   },
+  kyoto: {
+    name: '京都府',
+    geojson: require('./kyoto'),
+    center: { lat: 34.9221499, lng: 135.6135885 },
+  },
+  aichi: {
+    name: '愛知県',
+    geojson: require('./aichi'),
+    center: { lat: 35.0820833, lng: 137.1518136　},
+  },
   osaka: {
     name: '大阪府',
     geojson: require('./osaka'),
