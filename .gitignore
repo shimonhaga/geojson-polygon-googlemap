@@ -5,8 +5,6 @@ Thumbs.db
 
 node_modules/
 
-# compiled file
-/app.js
-
-# google api key
-src/google_api_key.js
+# core
+public/app.js
+.env

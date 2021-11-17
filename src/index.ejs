@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>東京23区 With H3</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <div id="map-canvas"></div>
+    <div id="map-nav">
+      <h3>GEOJSON 読み込み</h3>
+      <div>
+        <label for="map-prefecture-selection">geojson</label> : <button id="map-upload-geojson">読み込み</button><br/>
+        <textarea id="map-geojson-input"></textarea>
+      </div>
+
+      <hr/>
+      <h3>地図の表示</h3>
+      <div>
+        <label for="map-city-selection">地域の選択</label> :
+        <select id="map-city-selection"></select>
+      </div>
+
+      <div>
+        <label for="map-city-concavity">描画の曖昧度</label> :
+        <select id="map-city-concavity">
+          <option value="0">0 (オリジナル表示)</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="map-city-resolution">六角形の分解能</label> :
+        <select id="map-city-resolution">
+          <option value="0">0 (表示しない)</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="map-city-ring-size">六角形の数</label> :
+        <select id="map-city-ring-size">
+          <option value="0">0 (表示しない)</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="17">17</option>
+          <option value="18">18</option>
+          <option value="19">19</option>
+          <option value="20">20</option>
+
+          <option value="21">21</option>
+          <option value="22">22</option>
+          <option value="23">23</option>
+          <option value="24">24</option>
+          <option value="25">25</option>
+          <option value="26">26</option>
+          <option value="27">27</option>
+          <option value="28">28</option>
+          <option value="29">29</option>
+          <option value="30">30</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="map-city-checkinner">範囲内チェック</label> :
+        <select id="map-city-checkinner">
+          <option value="0">しない</option>
+          <option value="1">する</option>
+        </select>
+      </div>
+
+      <div>
+        <button id="map-city-display">表示する</button>
+      </div>
+
+      <hr/>
+      <h3>MySQL用</h3>
+
+      <textarea id="map-polygon"></textarea>
+    </div>
+
+    <script type="text/javascript" src="app.js"></script>
+
+    <script
+      id="google-map"
+      async
+      defer
+      type="text/javascript"
+      src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=<%= google_api_key; %>&libraries=geometry,places&region=JP"
+    ></script>
+  </body>
+</html>

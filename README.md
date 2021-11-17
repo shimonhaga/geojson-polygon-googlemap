@@ -2,7 +2,7 @@
 
 Drawing hexagon and polygon on GoogleMap.
 
-Using H3 (By Uber) and GeoJson (By 国土地理院 http://nlftp.mlit.go.jp/ksj/ )
+Using H3 (By Uber) and GeoJson (By 国土交通省 国土数値情報ダウンロード http://nlftp.mlit.go.jp/ksj/ )
 
 ## Installation
 Clone this repository to your computer

@@ -1,25 +1,25 @@
 const h3 = require("h3-js")
 const concaveman = require("concaveman")
 
-const PREFECTURES = require('../geojson/')
-
 const ICON_SIZE = 2
 const DEFAULT_CENTER = { lat: 35.685121, lng: 139.752885 }
+
+// 初期化処理
+function initialize() {
+  console.info('initialize')
+
+  // イベント追加
+  addEvent()
+
+  // マップ初期化
+  initMap()
+}
 
 let map
 let polygons = []
 let markers = []
 function initMap() {
-  // 都道府県選択
-  renderPrefectureSelection()
-
-  // 初期都市
-  renderCitySelection(PREFECTURES.tokyo.geojson)
-
-  // display ボタンにイベント追加
-  addEvent()
-
-  // マップ初期化
+  console.info('-- initMap')
   const mapOptions = {
     zoom: 13,
     mapTypeId: google.maps.MapTypeId.TERRAIN,
@@ -52,58 +52,31 @@ function initMap() {
   map.setMapTypeId('my_map_style')
 }
 
-function renderPrefectureSelection() {
-  const selection = document.getElementById('map-prefecture-selection')
-  for (const [index, prefecture] of Object.entries(PREFECTURES)) {
-    const option = document.createElement('option')
-    option.setAttribute('id', index)
-    option.setAttribute('value', index)
-    option.innerHTML = prefecture.name
-    selection.appendChild(option)
-  }
-  selection.addEventListener('change', function() {
-    const prefecture = PREFECTURES[this.value]
-    renderCitySelection(prefecture.geojson)
-    map.setCenter(prefecture.center)
-  })
-}
-
-function renderCitySelection(geojson) {
-  const cities = {}
-  for (const [index, feature] of Object.entries(geojson.features)) {
-    const name = feature.properties.N03_002 + feature.properties.N03_003 + feature.properties.N03_004
-    if (cities[name]) {
-      cities[name].indexes.push(index)
-    } else {
-      cities[name] = {
-        name: name,
-        indexes: [index]
-      }
-    }
-  }
-
-  const selection = document.getElementById('map-city-selection')
-  selection.textContent = null
-  for (const [index, city] of Object.entries(cities)) {
-    const option = document.createElement('option')
-    option.setAttribute('id', city.name)
-    option.setAttribute('value', JSON.stringify(city.indexes))
-    option.innerHTML = city.name
-    selection.appendChild(option)
-  }
-}
-
+let prefecture = null
 function addEvent() {
-  const prefectureSelection = document.getElementById('map-prefecture-selection')
+  console.info('-- addEvent')
+  document.getElementById('map-upload-geojson').addEventListener('click', function(e) {
+    const geojsonText = document.getElementById('map-geojson-input').value
+    try {
+      prefecture = JSON.parse(geojsonText)
+      renderCitySelection()
+    } catch (error) {
+      prefecture = null
+      alert('geojson のパースに失敗しました')
+    }
+  })
+
   const citySelection = document.getElementById('map-city-selection')
   const concavity = document.getElementById('map-city-concavity')
   const resolution = document.getElementById('map-city-resolution')
   const ringSize = document.getElementById('map-city-ring-size')
   const checkinner = document.getElementById('map-city-checkinner')
 
-  const button = document.getElementById('map-city-display')
-  button.addEventListener('click', function() {
-    const prefecture = PREFECTURES[prefectureSelection.value]
+  document.getElementById('map-city-display').addEventListener('click', function() {
+    if (!prefecture) {
+      alert('geojson を読み込んでください')
+      return
+    }
     const cityName = citySelection.innerHtml
     const cityIndexes = JSON.parse(citySelection.value)
     const concavityValue = concavity.value
@@ -111,11 +84,11 @@ function addEvent() {
     const ringSizeValue = ringSize.value * 1
     const isCheckInner = !!(checkinner.value * 1)
 
+    // マップ
     const features = []
     for (const index of cityIndexes) {
-      features.push(prefecture.geojson.features[index])
+      features.push(prefecture.features[index])
     }
-
 
     // クリア
     for (const polygon of polygons) {
@@ -152,6 +125,32 @@ function addEvent() {
     // 六角形
     drawHexagon(map, resolutionValue, ringSizeValue, centerCoordinate, cityPolygons, isCheckInner)
   })
+}
+
+function renderCitySelection() {
+  console.log('renderCitySelection', {prefecture})
+  const cities = {}
+  for (const [index, feature] of Object.entries(prefecture.features)) {
+    const name = feature.properties.N03_002 + feature.properties.N03_003 + feature.properties.N03_004
+    if (cities[name]) {
+      cities[name].indexes.push(index)
+    } else {
+      cities[name] = {
+        name: name,
+        indexes: [index]
+      }
+    }
+  }
+
+  const selection = document.getElementById('map-city-selection')
+  selection.textContent = null
+  for (const [index, city] of Object.entries(cities)) {
+    const option = document.createElement('option')
+    option.setAttribute('id', city.name)
+    option.setAttribute('value', JSON.stringify(city.indexes))
+    option.innerHTML = city.name
+    selection.appendChild(option)
+  }
 }
 
 function drawCityPolygons(map, cityName, features, concavityValue) {
@@ -315,11 +314,6 @@ function dropPin(coordinate, color = '#FF0000') {
 }
 
 window.addEventListener('load', function() {
-  const GOOGLE_API_KEY = require('./google_api_key.js')
-
-  const script = document.getElementById('google-map')
-  script.addEventListener('load', function(){
-    initMap()
-  })
-  script.setAttribute('src', 'https://maps.googleapis.com/maps/api/js?v=3.exp&key=' + GOOGLE_API_KEY + '&libraries=geometry,places&region=JP')
+  console.info('window.load')
+  initialize()
 })
