@@ -43,7 +43,7 @@ cd your-directory
 yarn start
 ```
 
-###　ブラウザを開く
+### ブラウザを開く
 `localhost:3001` を開く。
 (.env の PORT を変更している場合は 3001 のところをその数字にする)
 
