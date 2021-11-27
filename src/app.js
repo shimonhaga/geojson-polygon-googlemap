@@ -59,10 +59,24 @@ function addEvent() {
     const geojsonText = document.getElementById('map-geojson-input').value
     try {
       prefecture = JSON.parse(geojsonText)
-      renderCitySelection()
+      if (prefecture.type && prefecture.type === 'Feature') {
+        prefecture = {
+          name: '手動',
+          features: [prefecture]
+        }
+      } else if (prefecture.type && prefecture.type !== 'FeatureCollection') {
+        throw Error('このタイプの GeoJson は対応していません (support = FeatureCollection, Feature)')
+      }
     } catch (error) {
       prefecture = null
+      console.error(error)
       alert('geojson のパースに失敗しました')
+    }
+
+    try {
+      renderCitySelection()
+    } catch (error) {
+      alert('geojson からの UI構築に失敗しました')
     }
   })
 
@@ -83,6 +97,7 @@ function addEvent() {
     const resolutionValue = resolution.value * 1
     const ringSizeValue = ringSize.value * 1
     const isCheckInner = !!(checkinner.value * 1)
+    const isLatLngReverse = true // 国土地理院の lat lng は google api の並びと逆
 
     // マップ
     const features = []
@@ -102,11 +117,13 @@ function addEvent() {
 
     // 画面の中心
     const centers = [ 0, 0 ];
-    let length = 0;
+    let length = 0
+    const latIndex = isLatLngReverse ? 1 : 0
+    const lngIndex = isLatLngReverse ? 0 : 1
     for (const feature of features) {
       for (const coordinate of feature.geometry.coordinates[0]) {
-        centers[0] += coordinate[1]
-        centers[1] += coordinate[0]
+        centers[0] += coordinate[latIndex]
+        centers[1] += coordinate[lngIndex]
       }
       length += feature.geometry.coordinates[0].length
     }
@@ -120,7 +137,7 @@ function addEvent() {
     // map.setZoom(zoom)
 
     // 区のポリゴン
-    const cityPolygons = drawCityPolygons(map, cityName, features, concavityValue)
+    const cityPolygons = drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse)
 
     // 六角形
     drawHexagon(map, resolutionValue, ringSizeValue, centerCoordinate, cityPolygons, isCheckInner)
@@ -128,10 +145,10 @@ function addEvent() {
 }
 
 function renderCitySelection() {
-  console.log('renderCitySelection', {prefecture})
+  console.log('renderCitySelection', { prefecture })
   const cities = {}
   for (const [index, feature] of Object.entries(prefecture.features)) {
-    const name = feature.properties.N03_002 + feature.properties.N03_003 + feature.properties.N03_004
+    const name = (feature.properties.N03_002 || '') + (feature.properties.N03_003 || '') + (feature.properties.N03_004 || '') || '手動'
     if (cities[name]) {
       cities[name].indexes.push(index)
     } else {
@@ -153,14 +170,15 @@ function renderCitySelection() {
   }
 }
 
-function drawCityPolygons(map, cityName, features, concavityValue) {
+function drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse) {
   const cityPolygons = {}
   const sqls = [];
   for ( const feature of features ) {
     const cityCoordinates = feature.geometry.coordinates[0]
 
-    // 国土地理院の lat lng は google api の並びと逆
-    const revCityCoordinates = cityCoordinates.map(function(cityCoordinate) { return [cityCoordinate[1], cityCoordinate[0]] })
+    const latIndex = isLatLngReverse ? 1 : 0
+    const lngIndex = isLatLngReverse ? 0 : 1
+    const revCityCoordinates = cityCoordinates.map(function(cityCoordinate) { return [cityCoordinate[latIndex], cityCoordinate[lngIndex]] })
     const cavedCityCoordinates = concavityValue && concavityValue > 0
       ? concaveman(revCityCoordinates, concavityValue, 0)
       : revCityCoordinates
