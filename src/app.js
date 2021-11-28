@@ -85,6 +85,7 @@ function addEvent() {
   const resolution = document.getElementById('map-city-resolution')
   const ringSize = document.getElementById('map-city-ring-size')
   const checkinner = document.getElementById('map-city-checkinner')
+  const reverse = document.getElementById('map-city-reverse')
 
   document.getElementById('map-city-display').addEventListener('click', function() {
     if (!prefecture) {
@@ -97,7 +98,7 @@ function addEvent() {
     const resolutionValue = resolution.value * 1
     const ringSizeValue = ringSize.value * 1
     const isCheckInner = !!(checkinner.value * 1)
-    const isLatLngReverse = true // 国土地理院の lat lng は google api の並びと逆
+    const isLatLngReverse = !!(reverse.value * 1)
 
     // マップ
     const features = []
