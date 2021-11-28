@@ -116,7 +116,7 @@ function addEvent() {
     }
     markers = []
 
-    // 画面の中心
+    // ポリゴンの重心
     const centers = [ 0, 0 ];
     let length = 0
     const latIndex = isLatLngReverse ? 1 : 0
@@ -133,6 +133,9 @@ function addEvent() {
     map.setCenter(centerPosition)
     centerMarker = dropPin(centerCoordinate, '#000000')
     markers.push(centerMarker)
+
+    document.getElementById('map-center-lat').value = centerCoordinate[0]
+    document.getElementById('map-center-lng').value = centerCoordinate[1]
 
     // ズーム
     // map.setZoom(zoom)
