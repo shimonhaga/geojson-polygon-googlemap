@@ -136,6 +136,7 @@ function addEvent() {
 
     document.getElementById('map-center-lat').value = centerCoordinate[0]
     document.getElementById('map-center-lng').value = centerCoordinate[1]
+    document.getElementById('map-center-point').value = 'POINT(' + centerCoordinate[0] + ' ' + centerCoordinate[1] + ')'
 
     // ズーム
     // map.setZoom(zoom)

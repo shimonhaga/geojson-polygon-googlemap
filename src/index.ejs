@@ -10,17 +10,25 @@
   <body>
     <div id="map-canvas"></div>
     <div id="map-nav">
-      <h3>GEOJSON 読み込み</h3>
+      <h3>GEOJSON 入力</h3>
       <div>
-        <label for="map-prefecture-selection">geojson</label> : <button id="map-upload-geojson">読み込み</button><br/>
-        <textarea id="map-geojson-input"></textarea>
+        <textarea id="map-geojson-input"></textarea><br>
+        <button id="map-upload-geojson">読み込み</button>
       </div>
 
       <hr/>
-      <h3>地図の表示</h3>
+      <h3>描画設定</h3>
       <div>
-        <label for="map-city-selection">地域の選択</label> :
+        <label for="map-city-selection">* 地域の選択</label> :
         <select id="map-city-selection"></select>
+      </div>
+
+      <div>
+        <label for="map-city-reverse">* 緯度経度の反転</label> :
+        <select id="map-city-reverse">
+          <option value="0">しない</option>
+          <option value="1" selected>する</option>
+        </select>
       </div>
 
       <div>
@@ -105,14 +113,6 @@
       </div>
 
       <div>
-        <label for="map-city-reverse">緯度経度の反転</label> :
-        <select id="map-city-reverse">
-          <option value="0">しない</option>
-          <option value="1">する</option>
-        </select>
-      </div>
-
-      <div>
         <button id="map-city-display">表示する</button>
       </div>
 
@@ -125,7 +125,8 @@
       <h3>ポリゴンの重心</h3>
       <div>
         <label for="map-center-lat">緯度</label>: <input id="map-center-lat" readonly /><br>
-        <label for="map-center-lng">経度</label>: <input id="map-center-lng" readonly />
+        <label for="map-center-lng">経度</label>: <input id="map-center-lng" readonly /><br>
+        <textarea id="map-center-point"></textarea>
       </div>
     </div>
 
