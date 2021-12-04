@@ -61,7 +61,7 @@ function addEvent() {
       prefecture = JSON.parse(geojsonText)
       if (prefecture.type && prefecture.type === 'Feature') {
         prefecture = {
-          name: '手動',
+          name: '選択不要',
           features: [prefecture]
         }
       } else if (prefecture.type && prefecture.type !== 'FeatureCollection') {
@@ -153,7 +153,7 @@ function renderCitySelection() {
   console.log('renderCitySelection', { prefecture })
   const cities = {}
   for (const [index, feature] of Object.entries(prefecture.features)) {
-    const name = (feature.properties.N03_002 || '') + (feature.properties.N03_003 || '') + (feature.properties.N03_004 || '') || '手動'
+    const name = (feature.properties.N03_002 || '') + (feature.properties.N03_003 || '') + (feature.properties.N03_004 || '') || '選択不要'
     if (cities[name]) {
       cities[name].indexes.push(index)
     } else {
