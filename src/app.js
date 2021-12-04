@@ -147,6 +147,20 @@ function addEvent() {
     // 六角形
     drawHexagon(map, resolutionValue, ringSizeValue, centerCoordinate, cityPolygons, isCheckInner)
   })
+
+  const toggleFunction = function() {
+    if (this.classList.contains('opened')) {
+      this.classList.remove('opened')
+      console.log('* close: ' + this.innerText)
+    } else {
+      this.classList.add('opened')
+      console.log('* open: ' + this.innerText)
+    }
+  }
+  const toggleElements = document.getElementsByClassName('toggle')
+  for (let i = 0; i < toggleElements.length; i++) {
+    toggleElements[i].addEventListener('click', toggleFunction)
+  }
 }
 
 function renderCitySelection() {

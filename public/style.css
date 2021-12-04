@@ -21,9 +21,35 @@ html, body, #map-canvas {
   border: solid 1px #000;
 }
 #map-center-point { height: 50px; }
+
 h3 {
   margin: 0 auto;
 }
+
+h3.toggle {
+  cursor: pointer;
+}
+h3.toggle::before {
+  display: inline-block;
+  content: '-';
+  padding: 0 9px;
+  margin: 0 4px;
+  border: solid 1px black;
+  border-radius: 3px;
+}
+h3.toggle.opened::before {
+  display: inline;
+  content: '+';
+  padding: 1px 6px 4px;
+}
+h3.toggle + div {
+  display: none;
+}
+h3.toggle.opened + div {
+  display: block;
+}
+
+
 label {
   font-size: 0.75em;
   font-weight: bold;
