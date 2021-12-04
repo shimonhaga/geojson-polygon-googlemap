@@ -206,6 +206,7 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
     polygons.push(cityPolygon)
   }
   document.getElementById('map-polygon').value = 'POLYGON(' + sqls.join(',') + ')'
+  document.getElementById('map-polygon-length').innerHTML = ('POLYGON(' + sqls.join(',') + ')').length.toLocaleString()
   return cityPolygons
 }
 
