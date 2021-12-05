@@ -191,26 +191,36 @@ function renderCitySelection() {
 
 function drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse) {
   const cityPolygons = {}
-  const sqls = [];
+  const polygonsForSql = []
+  const polygonsForGeoJson = []
   for ( const feature of features ) {
     const cityCoordinates = feature.geometry.coordinates[0]
 
-    const latIndex = isLatLngReverse ? 1 : 0
-    const lngIndex = isLatLngReverse ? 0 : 1
-    const revCityCoordinates = cityCoordinates.map(function(cityCoordinate) { return [cityCoordinate[latIndex], cityCoordinate[lngIndex]] })
-    const cavedCityCoordinates = concavityValue && concavityValue > 0
-      ? concaveman(revCityCoordinates, concavityValue, 0)
-      : revCityCoordinates
+    const coordinates = isLatLngReverse
+      ? cityCoordinates.map(function(cityCoordinate) { return [cityCoordinate[1], cityCoordinate[0]] })
+      : cityCoordinates
+    const cavedCoordinates = concavityValue && concavityValue > 0
+      ? concaveman(coordinates, concavityValue, 0)
+      : coordinates
 
     // SQL 用
-    coords = cavedCityCoordinates.map(revCityCoordinate => revCityCoordinate.join(' '))
-    if (coords[0] !== coords[coords.length - 1]) {
-      coords.push(coords[0])
+    const coordinatesForSql = cavedCoordinates.map(revCityCoordinate => revCityCoordinate.join(' '))
+    if (coordinatesForSql[0] !== coordinatesForSql[coordinatesForSql.length - 1]) {
+      // 閉じる
+      coordinatesForSql.push(coordinatesForSql[0])
     }
-    sqls.push('(' + coords.join(',') + ')')
+    polygonsForSql.push('(' + coordinatesForSql.join(',') + ')')
+
+    // GeoJson 用
+    const coordinatesForGeoJson = cavedCoordinates.map(revCityCoordinate => '[' + revCityCoordinate.join(',') + ']')
+    if (coordinatesForGeoJson[0] !== coordinatesForGeoJson[coordinatesForGeoJson.length - 1]) {
+      // 閉じる
+      coordinatesForGeoJson.push(coordinatesForGeoJson[0])
+    }
+    polygonsForGeoJson.push('[' + coordinatesForGeoJson.join(',') + ']')
 
     // ポリゴン作成
-    const cityPolygon = createPolygon(cavedCityCoordinates, '#000000')
+    const cityPolygon = createPolygon(cavedCoordinates, '#000000')
     cityPolygon.setMap(map)
     if (cityPolygons[cityName]) {
       cityPolygons[cityName].push(cityPolygon)
@@ -219,8 +229,18 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
     }
     polygons.push(cityPolygon)
   }
-  document.getElementById('map-polygon').value = 'POLYGON(' + sqls.join(',') + ')'
-  document.getElementById('map-polygon-length').innerHTML = ('POLYGON(' + sqls.join(',') + ')').length.toLocaleString()
+
+  // SQL 表示
+  const sql = 'POLYGON(' + polygonsForSql.join(',') + ')'
+  document.getElementById('map-polygon').value = sql
+  document.getElementById('map-polygon-length').innerHTML = sql.length.toLocaleString()
+
+  // GeoJson 表示
+  const geoJson = '{"type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[' + polygonsForGeoJson.join(',') + ']}}'
+  document.getElementById('map-geojson-output').value = geoJson
+  document.getElementById('map-geojson-output-length').innerHTML = geoJson.length.toLocaleString()
+
+  // 返却
   return cityPolygons
 }
 

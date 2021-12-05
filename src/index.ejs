@@ -10,7 +10,7 @@
   <body>
     <div id="map-canvas"></div>
     <div id="map-nav">
-      <h3>GEOJSON 入力</h3>
+      <h3>GeoJson 入力</h3>
       <div>
         <textarea id="map-geojson-input"></textarea><br>
         <button id="map-upload-geojson">読み込み</button>
@@ -131,6 +131,13 @@
         <label for="map-center-lat">緯度</label>: <input id="map-center-lat" readonly /><br>
         <label for="map-center-lng">経度</label>: <input id="map-center-lng" readonly /><br>
         <textarea id="map-center-point"></textarea>
+      </div>
+
+      <hr/>
+      <h3 class="toggle">抽出&加工された GeoJson</h3>
+      <div>
+        <textarea id="map-geojson-output"></textarea><br/>
+        length: <span id="map-geojson-output-length"></span>
       </div>
     </div>
 
