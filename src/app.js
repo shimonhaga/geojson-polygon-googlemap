@@ -119,17 +119,31 @@ function addEvent() {
     // ポリゴンの重心
     const centers = [ 0, 0 ];
     let length = 0
+
     const latIndex = isLatLngReverse ? 1 : 0
     const lngIndex = isLatLngReverse ? 0 : 1
-    for (const feature of features) {
-      for (const coordinate of feature.geometry.coordinates[0]) {
-        centers[0] += coordinate[latIndex]
-        centers[1] += coordinate[lngIndex]
+    function addCenterByCoordinate(coords) {
+      for (const coord of coords) {
+        centers[0] += coord[latIndex] * 1
+        centers[1] += coord[lngIndex] * 1
+        length++
       }
-      length += feature.geometry.coordinates[0].length
     }
+
+    for (const feature of features) {
+      if (feature.geometry.type === 'MultiPolygon') {
+        feature.geometry.coordinates.forEach(function(nested) {
+          console.log({nested})
+          addCenterByCoordinate(nested[0])
+        })
+      } else {
+        addCenterByCoordinate(feature.geometry.coordinates[0])
+      }
+    }
+
     const centerCoordinate = [ centers[0] / length, centers[1] / length ]
     const centerPosition = new google.maps.LatLng(centerCoordinate[0], centerCoordinate[1])
+    console.log({centers, centerCoordinate, centerPosition})
     map.setCenter(centerPosition)
     centerMarker = dropPin(centerCoordinate, '#000000')
     markers.push(centerMarker)
@@ -193,15 +207,13 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
   const cityPolygons = {}
   const polygonsForSql = []
   const polygonsForGeoJson = []
-  for ( const feature of features ) {
-    const cityCoordinates = feature.geometry.coordinates[0]
-
-    const coordinates = isLatLngReverse
-      ? cityCoordinates.map(function(cityCoordinate) { return [cityCoordinate[1], cityCoordinate[0]] })
-      : cityCoordinates
-    const cavedCoordinates = concavityValue && concavityValue > 0
-      ? concaveman(coordinates, concavityValue, 0)
+  function innerFunction (coordinates) {
+    const refinedCoordinates = isLatLngReverse
+      ? coordinates.map(function(coord) { return [coord[1], coord[0]] })
       : coordinates
+    const cavedCoordinates = concavityValue && concavityValue > 0
+      ? concaveman(refinedCoordinates, concavityValue, 0)
+      : refinedCoordinates
 
     // SQL 用
     const coordinatesForSql = cavedCoordinates.map(revCityCoordinate => revCityCoordinate.join(' '))
@@ -228,6 +240,16 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
       cityPolygons[cityName] = [cityPolygon]
     }
     polygons.push(cityPolygon)
+  }
+  for ( const feature of features ) {
+    if (feature.geometry.type === 'MultiPolygon') {
+      feature.geometry.coordinates.forEach(function(nested) {
+        console.log({nested})
+        innerFunction(nested[0])
+      })
+    } else {
+      innerFunction(feature.geometry.coordinates[0])
+    }
   }
 
   // SQL 表示
