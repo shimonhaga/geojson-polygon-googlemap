@@ -133,7 +133,6 @@ function addEvent() {
     for (const feature of features) {
       if (feature.geometry.type === 'MultiPolygon') {
         feature.geometry.coordinates.forEach(function(nested) {
-          console.log({nested})
           addCenterByCoordinate(nested[0])
         })
       } else {
@@ -204,10 +203,12 @@ function renderCitySelection() {
 }
 
 function drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse) {
+  console.log({ features })
   const cityPolygons = {}
   const polygonsForSql = []
   const polygonsForGeoJson = []
-  function innerFunction (coordinates) {
+  let hasMulti = false
+  function innerFunction (coordinates, isMulti = false) {
     const refinedCoordinates = isLatLngReverse
       ? coordinates.map(function(coord) { return [coord[1], coord[0]] })
       : coordinates
@@ -216,7 +217,7 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
       : refinedCoordinates
 
     // SQL 用
-    const coordinatesForSql = cavedCoordinates.map(revCityCoordinate => revCityCoordinate.join(' '))
+    const coordinatesForSql = cavedCoordinates.map(cavedCoordinate => cavedCoordinate.join(' '))
     if (coordinatesForSql[0] !== coordinatesForSql[coordinatesForSql.length - 1]) {
       // 閉じる
       coordinatesForSql.push(coordinatesForSql[0])
@@ -224,12 +225,12 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
     polygonsForSql.push('(' + coordinatesForSql.join(',') + ')')
 
     // GeoJson 用
-    const coordinatesForGeoJson = cavedCoordinates.map(revCityCoordinate => '[' + revCityCoordinate.join(',') + ']')
+    const coordinatesForGeoJson = cavedCoordinates.map(cavedCoordinate => '[' + cavedCoordinate.join(',') + ']')
     if (coordinatesForGeoJson[0] !== coordinatesForGeoJson[coordinatesForGeoJson.length - 1]) {
       // 閉じる
       coordinatesForGeoJson.push(coordinatesForGeoJson[0])
     }
-    polygonsForGeoJson.push('[' + coordinatesForGeoJson.join(',') + ']')
+    polygonsForGeoJson.push((isMulti ? '[[' : '[') + coordinatesForGeoJson.join(',') + (isMulti ? ']]' : ']'))
 
     // ポリゴン作成
     const cityPolygon = createPolygon(cavedCoordinates, '#000000')
@@ -241,11 +242,11 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
     }
     polygons.push(cityPolygon)
   }
-  for ( const feature of features ) {
+  for (const feature of features) {
     if (feature.geometry.type === 'MultiPolygon') {
+      hasMulti = true
       feature.geometry.coordinates.forEach(function(nested) {
-        console.log({nested})
-        innerFunction(nested[0])
+        innerFunction(nested[0], true)
       })
     } else {
       innerFunction(feature.geometry.coordinates[0])
@@ -258,7 +259,7 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
   document.getElementById('map-polygon-length').innerHTML = sql.length.toLocaleString()
 
   // GeoJson 表示
-  const geoJson = '{"type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[' + polygonsForGeoJson.join(',') + ']}}'
+  const geoJson = '{"type":"Feature","properties":{},"geometry":{"type":"' + (hasMulti ? 'MultiPolygon' : 'Polygon') + '","coordinates":[' + polygonsForGeoJson.join(',') + ']}}'
   document.getElementById('map-geojson-output').value = geoJson
   document.getElementById('map-geojson-output-length').innerHTML = geoJson.length.toLocaleString()
 
