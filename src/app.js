@@ -142,7 +142,6 @@ function addEvent() {
 
     const centerCoordinate = [ centers[0] / length, centers[1] / length ]
     const centerPosition = new google.maps.LatLng(centerCoordinate[0], centerCoordinate[1])
-    console.log({centers, centerCoordinate, centerPosition})
     map.setCenter(centerPosition)
     centerMarker = dropPin(centerCoordinate, '#000000')
     markers.push(centerMarker)
@@ -164,10 +163,10 @@ function addEvent() {
   const toggleFunction = function() {
     if (this.classList.contains('opened')) {
       this.classList.remove('opened')
-      console.log('* close: ' + this.innerText)
+      console.info('* close: ' + this.innerText)
     } else {
       this.classList.add('opened')
-      console.log('* open: ' + this.innerText)
+      console.info('* open: ' + this.innerText)
     }
   }
   const toggleElements = document.getElementsByClassName('toggle')
@@ -177,7 +176,6 @@ function addEvent() {
 }
 
 function renderCitySelection() {
-  console.log('renderCitySelection', { prefecture })
   const cities = {}
   for (const [index, feature] of Object.entries(prefecture.features)) {
     const name = (feature.properties.N03_002 || '') + (feature.properties.N03_003 || '') + (feature.properties.N03_004 || '') || '選択不要'
@@ -203,11 +201,11 @@ function renderCitySelection() {
 }
 
 function drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse) {
-  console.log({ features })
   const cityPolygons = {}
   const polygonsForSql = []
   const polygonsForGeoJson = []
   let hasMulti = false
+  const shouldConvertMultiPolygon = features.length > 1
   function innerFunction (coordinates, isMulti = false) {
     const refinedCoordinates = isLatLngReverse
       ? coordinates.map(function(coord) { return [coord[1], coord[0]] })
@@ -249,7 +247,7 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
         innerFunction(nested[0], true)
       })
     } else {
-      innerFunction(feature.geometry.coordinates[0])
+      innerFunction(feature.geometry.coordinates[0], shouldConvertMultiPolygon)
     }
   }
 
@@ -259,7 +257,7 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
   document.getElementById('map-polygon-length').innerHTML = sql.length.toLocaleString()
 
   // GeoJson 表示
-  const geoJson = '{"type":"Feature","properties":{},"geometry":{"type":"' + (hasMulti ? 'MultiPolygon' : 'Polygon') + '","coordinates":[' + polygonsForGeoJson.join(',') + ']}}'
+  const geoJson = '{"type":"Feature","properties":{},"geometry":{"type":"' + (hasMulti || shouldConvertMultiPolygon ? 'MultiPolygon' : 'Polygon') + '","coordinates":[' + polygonsForGeoJson.join(',') + ']}}'
   document.getElementById('map-geojson-output').value = geoJson
   document.getElementById('map-geojson-output-length').innerHTML = geoJson.length.toLocaleString()
 
