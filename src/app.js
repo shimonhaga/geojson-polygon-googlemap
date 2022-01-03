@@ -119,15 +119,27 @@ function addEvent() {
     // ポリゴンの重心
     const centers = [ 0, 0 ];
     let length = 0
+
     const latIndex = isLatLngReverse ? 1 : 0
     const lngIndex = isLatLngReverse ? 0 : 1
-    for (const feature of features) {
-      for (const coordinate of feature.geometry.coordinates[0]) {
-        centers[0] += coordinate[latIndex]
-        centers[1] += coordinate[lngIndex]
+    function addCenterByCoordinate(coords) {
+      for (const coord of coords) {
+        centers[0] += coord[latIndex] * 1
+        centers[1] += coord[lngIndex] * 1
+        length++
       }
-      length += feature.geometry.coordinates[0].length
     }
+
+    for (const feature of features) {
+      if (feature.geometry.type === 'MultiPolygon') {
+        feature.geometry.coordinates.forEach(function(nested) {
+          addCenterByCoordinate(nested[0])
+        })
+      } else {
+        addCenterByCoordinate(feature.geometry.coordinates[0])
+      }
+    }
+
     const centerCoordinate = [ centers[0] / length, centers[1] / length ]
     const centerPosition = new google.maps.LatLng(centerCoordinate[0], centerCoordinate[1])
     map.setCenter(centerPosition)
@@ -147,10 +159,23 @@ function addEvent() {
     // 六角形
     drawHexagon(map, resolutionValue, ringSizeValue, centerCoordinate, cityPolygons, isCheckInner)
   })
+
+  const toggleFunction = function() {
+    if (this.classList.contains('opened')) {
+      this.classList.remove('opened')
+      console.info('* close: ' + this.innerText)
+    } else {
+      this.classList.add('opened')
+      console.info('* open: ' + this.innerText)
+    }
+  }
+  const toggleElements = document.getElementsByClassName('toggle')
+  for (let i = 0; i < toggleElements.length; i++) {
+    toggleElements[i].addEventListener('click', toggleFunction)
+  }
 }
 
 function renderCitySelection() {
-  console.log('renderCitySelection', { prefecture })
   const cities = {}
   for (const [index, feature] of Object.entries(prefecture.features)) {
     const name = (feature.properties.N03_002 || '') + (feature.properties.N03_003 || '') + (feature.properties.N03_004 || '') || '選択不要'
@@ -177,26 +202,36 @@ function renderCitySelection() {
 
 function drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse) {
   const cityPolygons = {}
-  const sqls = [];
-  for ( const feature of features ) {
-    const cityCoordinates = feature.geometry.coordinates[0]
-
-    const latIndex = isLatLngReverse ? 1 : 0
-    const lngIndex = isLatLngReverse ? 0 : 1
-    const revCityCoordinates = cityCoordinates.map(function(cityCoordinate) { return [cityCoordinate[latIndex], cityCoordinate[lngIndex]] })
-    const cavedCityCoordinates = concavityValue && concavityValue > 0
-      ? concaveman(revCityCoordinates, concavityValue, 0)
-      : revCityCoordinates
+  const polygonsForSql = []
+  const polygonsForGeoJson = []
+  let hasMulti = false
+  const shouldConvertMultiPolygon = features.length > 1
+  function innerFunction (coordinates, isMulti = false) {
+    const refinedCoordinates = isLatLngReverse
+      ? coordinates.map(function(coord) { return [coord[1], coord[0]] })
+      : coordinates
+    const cavedCoordinates = concavityValue && concavityValue > 0
+      ? concaveman(refinedCoordinates, concavityValue, 0)
+      : refinedCoordinates
 
     // SQL 用
-    coords = cavedCityCoordinates.map(revCityCoordinate => revCityCoordinate.join(' '))
-    if (coords[0] !== coords[coords.length - 1]) {
-      coords.push(coords[0])
+    const coordinatesForSql = cavedCoordinates.map(cavedCoordinate => cavedCoordinate.join(' '))
+    if (coordinatesForSql[0] !== coordinatesForSql[coordinatesForSql.length - 1]) {
+      // 閉じる
+      coordinatesForSql.push(coordinatesForSql[0])
     }
-    sqls.push('(' + coords.join(',') + ')')
+    polygonsForSql.push('(' + coordinatesForSql.join(',') + ')')
+
+    // GeoJson 用
+    const coordinatesForGeoJson = cavedCoordinates.map(cavedCoordinate => '[' + cavedCoordinate.join(',') + ']')
+    if (coordinatesForGeoJson[0] !== coordinatesForGeoJson[coordinatesForGeoJson.length - 1]) {
+      // 閉じる
+      coordinatesForGeoJson.push(coordinatesForGeoJson[0])
+    }
+    polygonsForGeoJson.push((isMulti ? '[[' : '[') + coordinatesForGeoJson.join(',') + (isMulti ? ']]' : ']'))
 
     // ポリゴン作成
-    const cityPolygon = createPolygon(cavedCityCoordinates, '#000000')
+    const cityPolygon = createPolygon(cavedCoordinates, '#000000')
     cityPolygon.setMap(map)
     if (cityPolygons[cityName]) {
       cityPolygons[cityName].push(cityPolygon)
@@ -205,7 +240,28 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
     }
     polygons.push(cityPolygon)
   }
-  document.getElementById('map-polygon').value = 'POLYGON(' + sqls.join(',') + ')'
+  for (const feature of features) {
+    if (feature.geometry.type === 'MultiPolygon') {
+      hasMulti = true
+      feature.geometry.coordinates.forEach(function(nested) {
+        innerFunction(nested[0], true)
+      })
+    } else {
+      innerFunction(feature.geometry.coordinates[0], shouldConvertMultiPolygon)
+    }
+  }
+
+  // SQL 表示
+  const sql = 'POLYGON(' + polygonsForSql.join(',') + ')'
+  document.getElementById('map-polygon').value = sql
+  document.getElementById('map-polygon-length').innerHTML = sql.length.toLocaleString()
+
+  // GeoJson 表示
+  const geoJson = '{"type":"Feature","properties":{},"geometry":{"type":"' + (hasMulti || shouldConvertMultiPolygon ? 'MultiPolygon' : 'Polygon') + '","coordinates":[' + polygonsForGeoJson.join(',') + ']}}'
+  document.getElementById('map-geojson-output').value = geoJson
+  document.getElementById('map-geojson-output-length').innerHTML = geoJson.length.toLocaleString()
+
+  // 返却
   return cityPolygons
 }
 
