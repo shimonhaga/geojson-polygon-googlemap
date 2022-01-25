@@ -252,7 +252,10 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
   }
 
   // SQL 表示
-  const sql = 'POLYGON(' + polygonsForSql.join(',') + ')'
+  const sql = polygonsForSql.length > 1
+    ? 'MultiPolygon((' + polygonsForSql.join('),(') + '))'
+    : 'Polygon(' + polygonsForSql.join(',') + ')'
+
   document.getElementById('map-polygon').value = sql
   document.getElementById('map-polygon-length').innerHTML = sql.length.toLocaleString()
 
