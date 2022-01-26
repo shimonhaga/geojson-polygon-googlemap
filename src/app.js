@@ -86,6 +86,7 @@ function addEvent() {
   const ringSize = document.getElementById('map-city-ring-size')
   const checkinner = document.getElementById('map-city-checkinner')
   const reverse = document.getElementById('map-city-reverse')
+  const displayPolygonSize = document.getElementById('map-city-display-polygon-size')
 
   document.getElementById('map-city-display').addEventListener('click', function() {
     if (!prefecture) {
@@ -99,6 +100,7 @@ function addEvent() {
     const ringSizeValue = ringSize.value * 1
     const isCheckInner = !!(checkinner.value * 1)
     const isLatLngReverse = !!(reverse.value * 1)
+    const displayPolygonSizeValue = displayPolygonSize.value * 1
 
     // マップ
     const features = []
@@ -154,7 +156,7 @@ function addEvent() {
     // map.setZoom(zoom)
 
     // 区のポリゴン
-    const cityPolygons = drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse)
+    const cityPolygons = drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse, displayPolygonSizeValue)
 
     // 六角形
     drawHexagon(map, resolutionValue, ringSizeValue, centerCoordinate, cityPolygons, isCheckInner)
@@ -200,12 +202,13 @@ function renderCitySelection() {
   }
 }
 
-function drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse) {
+function drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse, displayPolygonSize) {
   const cityPolygons = {}
   const polygonsForSql = []
   const polygonsForGeoJson = []
   let hasMulti = false
   const shouldConvertMultiPolygon = features.length > 1
+
   function innerFunction (coordinates, isMulti = false) {
     const refinedCoordinates = isLatLngReverse
       ? coordinates.map(function(coord) { return [coord[1], coord[0]] })
@@ -214,18 +217,19 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
       ? concaveman(refinedCoordinates, concavityValue, 0)
       : refinedCoordinates
 
-    // SQL 用
-    const coordinatesForSql = cavedCoordinates.map(cavedCoordinate => cavedCoordinate.join(' '))
+    const coordinatesForSql = []
+    const coordinatesForGeoJson = []
+    cavedCoordinates.forEach(cavedCoordinate => {
+      coordinatesForSql.push(cavedCoordinate.join(' '))
+      coordinatesForGeoJson.push('[' + cavedCoordinate.join(',') + ']')
+    })
+
     if (coordinatesForSql[0] !== coordinatesForSql[coordinatesForSql.length - 1]) {
-      // 閉じる
       coordinatesForSql.push(coordinatesForSql[0])
     }
     polygonsForSql.push('(' + coordinatesForSql.join(',') + ')')
 
-    // GeoJson 用
-    const coordinatesForGeoJson = cavedCoordinates.map(cavedCoordinate => '[' + cavedCoordinate.join(',') + ']')
     if (coordinatesForGeoJson[0] !== coordinatesForGeoJson[coordinatesForGeoJson.length - 1]) {
-      // 閉じる
       coordinatesForGeoJson.push(coordinatesForGeoJson[0])
     }
     polygonsForGeoJson.push((isMulti ? '[[' : '[') + coordinatesForGeoJson.join(',') + (isMulti ? ']]' : ']'))
@@ -240,12 +244,18 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
     }
     polygons.push(cityPolygon)
   }
+
   for (const feature of features) {
     if (feature.geometry.type === 'MultiPolygon') {
       hasMulti = true
-      feature.geometry.coordinates.forEach(function(nested) {
+      for (const nested of feature.geometry.coordinates) {
+        console.log({displayPolygonSize, size: nested[0].length})
+        if (displayPolygonSize > 0 && displayPolygonSize > nested[0].length) {
+          continue
+        }
+
         innerFunction(nested[0], true)
-      })
+      }
     } else {
       innerFunction(feature.geometry.coordinates[0], shouldConvertMultiPolygon)
     }
@@ -263,6 +273,9 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
   const geoJson = '{"type":"Feature","properties":{},"geometry":{"type":"' + (hasMulti || shouldConvertMultiPolygon ? 'MultiPolygon' : 'Polygon') + '","coordinates":[' + polygonsForGeoJson.join(',') + ']}}'
   document.getElementById('map-geojson-output').value = geoJson
   document.getElementById('map-geojson-output-length').innerHTML = geoJson.length.toLocaleString()
+
+  // ポリゴン数
+  document.getElementById('map-polygon-count').value = polygonsForSql.length
 
   // 返却
   return cityPolygons
