@@ -1,5 +1,6 @@
-const h3 = require("h3-js")
-const concaveman = require("concaveman")
+const h3 = require('h3-js')
+const concaveman = require('concaveman')
+const { COLORS } = require('./colors')
 
 const ICON_SIZE = 2
 const DEFAULT_CENTER = { lat: 35.685121, lng: 139.752885 }
@@ -209,7 +210,7 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
   let hasMulti = false
   const shouldConvertMultiPolygon = features.length > 1
 
-  function innerFunction (coordinates, isMulti = false) {
+  function innerFunction (coordinates, index, isMulti = false) {
     const refinedCoordinates = isLatLngReverse
       ? coordinates.map(function(coord) { return [coord[1], coord[0]] })
       : coordinates
@@ -235,7 +236,7 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
     polygonsForGeoJson.push((isMulti ? '[[' : '[') + coordinatesForGeoJson.join(',') + (isMulti ? ']]' : ']'))
 
     // ポリゴン作成
-    const cityPolygon = createPolygon(cavedCoordinates, '#000000')
+    const cityPolygon = createPolygon(cavedCoordinates, COLORS[index])
     cityPolygon.setMap(map)
     if (cityPolygons[cityName]) {
       cityPolygons[cityName].push(cityPolygon)
@@ -245,21 +246,23 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
     polygons.push(cityPolygon)
   }
 
-  for (const feature of features) {
+  features.forEach((feature, fIndex) => {
     if (feature.geometry.type === 'MultiPolygon') {
       hasMulti = true
-      for (const nested of feature.geometry.coordinates) {
-        console.log({displayPolygonSize, size: nested[0].length})
+      feature.geometry.coordinates.forEach((nested, index) => {
         if (displayPolygonSize > 0 && displayPolygonSize > nested[0].length) {
-          continue
+          return
         }
 
-        innerFunction(nested[0], true)
-      }
+        innerFunction(nested[0], index, true)
+      })
     } else {
-      innerFunction(feature.geometry.coordinates[0], shouldConvertMultiPolygon)
+      if (displayPolygonSize > 0 && displayPolygonSize > feature.geometry.coordinates[0].length) {
+        return
+      }
+      innerFunction(feature.geometry.coordinates[0], fIndex, shouldConvertMultiPolygon)
     }
-  }
+  })
 
   // SQL 表示
   const sql = polygonsForSql.length > 1
