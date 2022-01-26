@@ -119,45 +119,11 @@ function addEvent() {
     }
     markers = []
 
-    // ポリゴンの重心
-    const centers = [ 0, 0 ];
-    let length = 0
-
-    const latIndex = isLatLngReverse ? 1 : 0
-    const lngIndex = isLatLngReverse ? 0 : 1
-    function addCenterByCoordinate(coords) {
-      for (const coord of coords) {
-        centers[0] += coord[latIndex] * 1
-        centers[1] += coord[lngIndex] * 1
-        length++
-      }
-    }
-
-    for (const feature of features) {
-      if (feature.geometry.type === 'MultiPolygon') {
-        feature.geometry.coordinates.forEach(function(nested) {
-          addCenterByCoordinate(nested[0])
-        })
-      } else {
-        addCenterByCoordinate(feature.geometry.coordinates[0])
-      }
-    }
-
-    const centerCoordinate = [ centers[0] / length, centers[1] / length ]
-    const centerPosition = new google.maps.LatLng(centerCoordinate[0], centerCoordinate[1])
-    map.setCenter(centerPosition)
-    centerMarker = dropPin(centerCoordinate, '#000000')
-    markers.push(centerMarker)
-
-    document.getElementById('map-center-lat').value = centerCoordinate[0]
-    document.getElementById('map-center-lng').value = centerCoordinate[1]
-    document.getElementById('map-center-point').value = 'POINT(' + centerCoordinate[0] + ' ' + centerCoordinate[1] + ')'
-
     // ズーム
     // map.setZoom(zoom)
 
-    // 区のポリゴン
-    const cityPolygons = drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse, displayPolygonSizeValue)
+    // ポリゴン
+    const { centerCoordinate, cityPolygons } = drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse, displayPolygonSizeValue)
 
     // 六角形
     drawHexagon(map, resolutionValue, ringSizeValue, centerCoordinate, cityPolygons, isCheckInner)
@@ -176,6 +142,17 @@ function addEvent() {
   for (let i = 0; i < toggleElements.length; i++) {
     toggleElements[i].addEventListener('click', toggleFunction)
   }
+}
+
+function setCenter(coordinate, color = '#000000') {
+  const center = new google.maps.LatLng(coordinate[0], coordinate[1])
+  map.setCenter(center)
+  centerMarker = dropPin(coordinate, color)
+  markers.push(centerMarker)
+
+  document.getElementById('map-center-lat').value = coordinate[0]
+  document.getElementById('map-center-lng').value = coordinate[1]
+  document.getElementById('map-center-point').value = 'POINT(' + coordinate[0] + ' ' + coordinate[1] + ')'
 }
 
 function renderCitySelection() {
@@ -204,13 +181,28 @@ function renderCitySelection() {
 }
 
 function drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse, displayPolygonSize) {
+  // ポリゴンの重心
+  const centers = [ 0, 0 ];
+  let length = 0
+
+  const latIndex = isLatLngReverse ? 1 : 0
+  const lngIndex = isLatLngReverse ? 0 : 1
+  function addCenterByCoordinate(coords) {
+    for (const coord of coords) {
+      centers[0] += coord[latIndex] * 1
+      centers[1] += coord[lngIndex] * 1
+      length++
+    }
+  }
+
+  // ポリゴンやSQL
   const cityPolygons = {}
   const polygonsForSql = []
   const polygonsForGeoJson = []
   let hasMulti = false
   const shouldConvertMultiPolygon = features.length > 1
 
-  function innerFunction (coordinates, index, isMulti = false) {
+  function polygonProcessor (coordinates, index, isMulti = false) {
     const refinedCoordinates = isLatLngReverse
       ? coordinates.map(function(coord) { return [coord[1], coord[0]] })
       : coordinates
@@ -253,14 +245,15 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
         if (displayPolygonSize > 0 && displayPolygonSize > nested[0].length) {
           return
         }
-
-        innerFunction(nested[0], index, true)
+        polygonProcessor(nested[0], index, true)
+        addCenterByCoordinate(nested[0])
       })
     } else {
       if (displayPolygonSize > 0 && displayPolygonSize > feature.geometry.coordinates[0].length) {
         return
       }
-      innerFunction(feature.geometry.coordinates[0], fIndex, shouldConvertMultiPolygon)
+      polygonProcessor(feature.geometry.coordinates[0], fIndex, shouldConvertMultiPolygon)
+      addCenterByCoordinate(feature.geometry.coordinates[0])
     }
   })
 
@@ -280,8 +273,12 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
   // ポリゴン数
   document.getElementById('map-polygon-count').value = polygonsForSql.length
 
+  // 重心
+  const centerCoordinate = [ centers[0] / length, centers[1] / length ]
+  setCenter(centerCoordinate, '#000000')
+
   // 返却
-  return cityPolygons
+  return { centerCoordinate, cityPolygons }
 }
 
 function drawHexagon(map, resolution, ringSize, centerCoordinate, cityPolygons, checkInner) {
