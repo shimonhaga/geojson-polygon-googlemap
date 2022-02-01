@@ -1,5 +1,6 @@
-const h3 = require("h3-js")
-const concaveman = require("concaveman")
+const h3 = require('h3-js')
+const concaveman = require('concaveman')
+const { COLORS } = require('./colors')
 
 const ICON_SIZE = 2
 const DEFAULT_CENTER = { lat: 35.685121, lng: 139.752885 }
@@ -86,6 +87,7 @@ function addEvent() {
   const ringSize = document.getElementById('map-city-ring-size')
   const checkinner = document.getElementById('map-city-checkinner')
   const reverse = document.getElementById('map-city-reverse')
+  const displayPolygonSize = document.getElementById('map-city-display-polygon-size')
 
   document.getElementById('map-city-display').addEventListener('click', function() {
     if (!prefecture) {
@@ -99,6 +101,7 @@ function addEvent() {
     const ringSizeValue = ringSize.value * 1
     const isCheckInner = !!(checkinner.value * 1)
     const isLatLngReverse = !!(reverse.value * 1)
+    const displayPolygonSizeValue = displayPolygonSize.value * 1
 
     // マップ
     const features = []
@@ -116,45 +119,11 @@ function addEvent() {
     }
     markers = []
 
-    // ポリゴンの重心
-    const centers = [ 0, 0 ];
-    let length = 0
-
-    const latIndex = isLatLngReverse ? 1 : 0
-    const lngIndex = isLatLngReverse ? 0 : 1
-    function addCenterByCoordinate(coords) {
-      for (const coord of coords) {
-        centers[0] += coord[latIndex] * 1
-        centers[1] += coord[lngIndex] * 1
-        length++
-      }
-    }
-
-    for (const feature of features) {
-      if (feature.geometry.type === 'MultiPolygon') {
-        feature.geometry.coordinates.forEach(function(nested) {
-          addCenterByCoordinate(nested[0])
-        })
-      } else {
-        addCenterByCoordinate(feature.geometry.coordinates[0])
-      }
-    }
-
-    const centerCoordinate = [ centers[0] / length, centers[1] / length ]
-    const centerPosition = new google.maps.LatLng(centerCoordinate[0], centerCoordinate[1])
-    map.setCenter(centerPosition)
-    centerMarker = dropPin(centerCoordinate, '#000000')
-    markers.push(centerMarker)
-
-    document.getElementById('map-center-lat').value = centerCoordinate[0]
-    document.getElementById('map-center-lng').value = centerCoordinate[1]
-    document.getElementById('map-center-point').value = 'POINT(' + centerCoordinate[0] + ' ' + centerCoordinate[1] + ')'
-
     // ズーム
     // map.setZoom(zoom)
 
-    // 区のポリゴン
-    const cityPolygons = drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse)
+    // ポリゴン
+    const { centerCoordinate, cityPolygons } = drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse, displayPolygonSizeValue)
 
     // 六角形
     drawHexagon(map, resolutionValue, ringSizeValue, centerCoordinate, cityPolygons, isCheckInner)
@@ -173,6 +142,17 @@ function addEvent() {
   for (let i = 0; i < toggleElements.length; i++) {
     toggleElements[i].addEventListener('click', toggleFunction)
   }
+}
+
+function setCenter(coordinate, color = '#000000') {
+  const center = new google.maps.LatLng(coordinate[0], coordinate[1])
+  map.setCenter(center)
+  centerMarker = dropPin(coordinate, color)
+  markers.push(centerMarker)
+
+  document.getElementById('map-center-lat').value = coordinate[0]
+  document.getElementById('map-center-lng').value = coordinate[1]
+  document.getElementById('map-center-point').value = 'POINT(' + coordinate[0] + ' ' + coordinate[1] + ')'
 }
 
 function renderCitySelection() {
@@ -200,13 +180,29 @@ function renderCitySelection() {
   }
 }
 
-function drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse) {
+function drawCityPolygons(map, cityName, features, concavityValue, isLatLngReverse, displayPolygonSize) {
+  // ポリゴンの重心
+  const centers = [ 0, 0 ];
+  let length = 0
+
+  const latIndex = isLatLngReverse ? 1 : 0
+  const lngIndex = isLatLngReverse ? 0 : 1
+  function addCenterByCoordinate(coords) {
+    for (const coord of coords) {
+      centers[0] += coord[latIndex] * 1
+      centers[1] += coord[lngIndex] * 1
+      length++
+    }
+  }
+
+  // ポリゴンやSQL
   const cityPolygons = {}
   const polygonsForSql = []
   const polygonsForGeoJson = []
   let hasMulti = false
   const shouldConvertMultiPolygon = features.length > 1
-  function innerFunction (coordinates, isMulti = false) {
+
+  function polygonProcessor (coordinates, index, isMulti = false) {
     const refinedCoordinates = isLatLngReverse
       ? coordinates.map(function(coord) { return [coord[1], coord[0]] })
       : coordinates
@@ -214,24 +210,25 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
       ? concaveman(refinedCoordinates, concavityValue, 0)
       : refinedCoordinates
 
-    // SQL 用
-    const coordinatesForSql = cavedCoordinates.map(cavedCoordinate => cavedCoordinate.join(' '))
+    const coordinatesForSql = []
+    const coordinatesForGeoJson = []
+    cavedCoordinates.forEach(cavedCoordinate => {
+      coordinatesForSql.push(cavedCoordinate.join(' '))
+      coordinatesForGeoJson.push('[' + cavedCoordinate.join(',') + ']')
+    })
+
     if (coordinatesForSql[0] !== coordinatesForSql[coordinatesForSql.length - 1]) {
-      // 閉じる
       coordinatesForSql.push(coordinatesForSql[0])
     }
     polygonsForSql.push('(' + coordinatesForSql.join(',') + ')')
 
-    // GeoJson 用
-    const coordinatesForGeoJson = cavedCoordinates.map(cavedCoordinate => '[' + cavedCoordinate.join(',') + ']')
     if (coordinatesForGeoJson[0] !== coordinatesForGeoJson[coordinatesForGeoJson.length - 1]) {
-      // 閉じる
       coordinatesForGeoJson.push(coordinatesForGeoJson[0])
     }
     polygonsForGeoJson.push((isMulti ? '[[' : '[') + coordinatesForGeoJson.join(',') + (isMulti ? ']]' : ']'))
 
     // ポリゴン作成
-    const cityPolygon = createPolygon(cavedCoordinates, '#000000')
+    const cityPolygon = createPolygon(cavedCoordinates, COLORS[index])
     cityPolygon.setMap(map)
     if (cityPolygons[cityName]) {
       cityPolygons[cityName].push(cityPolygon)
@@ -240,16 +237,25 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
     }
     polygons.push(cityPolygon)
   }
-  for (const feature of features) {
+
+  features.forEach((feature, fIndex) => {
     if (feature.geometry.type === 'MultiPolygon') {
       hasMulti = true
-      feature.geometry.coordinates.forEach(function(nested) {
-        innerFunction(nested[0], true)
+      feature.geometry.coordinates.forEach((nested, index) => {
+        if (displayPolygonSize > 0 && displayPolygonSize > nested[0].length) {
+          return
+        }
+        polygonProcessor(nested[0], index, true)
+        addCenterByCoordinate(nested[0])
       })
     } else {
-      innerFunction(feature.geometry.coordinates[0], shouldConvertMultiPolygon)
+      if (displayPolygonSize > 0 && displayPolygonSize > feature.geometry.coordinates[0].length) {
+        return
+      }
+      polygonProcessor(feature.geometry.coordinates[0], fIndex, shouldConvertMultiPolygon)
+      addCenterByCoordinate(feature.geometry.coordinates[0])
     }
-  }
+  })
 
   // SQL 表示
   const sql = polygonsForSql.length > 1
@@ -264,8 +270,15 @@ function drawCityPolygons(map, cityName, features, concavityValue, isLatLngRever
   document.getElementById('map-geojson-output').value = geoJson
   document.getElementById('map-geojson-output-length').innerHTML = geoJson.length.toLocaleString()
 
+  // ポリゴン数
+  document.getElementById('map-polygon-count').value = polygonsForSql.length
+
+  // 重心
+  const centerCoordinate = [ centers[0] / length, centers[1] / length ]
+  setCenter(centerCoordinate, '#000000')
+
   // 返却
-  return cityPolygons
+  return { centerCoordinate, cityPolygons }
 }
 
 function drawHexagon(map, resolution, ringSize, centerCoordinate, cityPolygons, checkInner) {

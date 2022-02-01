@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
   <head>
+    <meta charset="utf-8">
     <title>GeoJson 描画ツール</title>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
-    <meta charset="utf-8">
     <link rel="stylesheet" href="style.css" />
   </head>
 
@@ -30,6 +30,11 @@
             <option value="0">しない</option>
             <option value="1" selected>する</option>
           </select>
+        </div>
+
+        <div>
+          <label for="map-city-display-polygon-size">表示するポリゴン数</label> :
+          <input id="map-city-display-polygon-size" value="0" class="sm" />以上
         </div>
 
         <div>
@@ -126,8 +131,13 @@
       </div>
 
       <hr/>
-      <h3 class="toggle">ポリゴンの重心</h3>
+      <h3 class="toggle">ポリゴン情報</h3>
       <div>
+        <h4>領域数</h4>
+        <input id="map-polygon-count" class="sm" readonly />個<br>
+
+        <hr>
+        <h4>重心</h4>
         <label for="map-center-lat">緯度</label>: <input id="map-center-lat" readonly /><br>
         <label for="map-center-lng">経度</label>: <input id="map-center-lng" readonly /><br>
         <textarea id="map-center-point"></textarea>
@@ -141,7 +151,7 @@
       </div>
     </div>
 
-    <script type="text/javascript" src="app.js"></script>
+    <script src="app.js"></script>
 
     <script
       id="google-map"
