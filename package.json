@@ -1,7 +1,7 @@
 {
   "name": "geojson-on-gmap",
   "description": "Drawing hexagon and polygon on GoogleMap.",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "repository": "git@github.com:shimonhaga/geojson-polygon-googlemap.git",
   "license": "MIT",
   "author": "Shimon Haga <shimon.haga@gmail.com>",
