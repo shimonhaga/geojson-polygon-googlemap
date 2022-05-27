@@ -23,8 +23,7 @@
     "dotenv": "^10.0.0",
     "ejs": "^3.1.6",
     "express": "^4.17.1",
-    "h3-js": "^3.7.2",
-    "multer": "^1.4.3"
+    "h3-js": "^3.7.2"
   },
   "scripts": {
     "dev": "npm run compile && npm run start",
