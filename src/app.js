@@ -7,7 +7,7 @@ const DEFAULT_CENTER = { lat: 35.685121, lng: 139.752885 }
 
 // 初期化処理
 function initialize() {
-  console.info('initialize')
+  console.info('initializing...')
 
   // イベント追加
   addEvent()

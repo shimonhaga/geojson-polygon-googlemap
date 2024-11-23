@@ -1,8 +1,12 @@
 require('dotenv').config()
+
+// --------------------------------------------------
+// setup
+// --------------------------------------------------
 const express = require('express')
 
 const app = express()
-const port = process.env.PORT || 3000
+const port = process.env.SERVER_PORT || 3002
 
 app.set('view engine', 'ejs')
 app.use(express.urlencoded({ extended: true }))

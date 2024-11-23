@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>GeoJson 描画ツール</title>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css">
   </head>
 
   <body>
@@ -34,7 +34,7 @@
 
         <div>
           <label for="map-city-display-polygon-size">表示するポリゴン数</label> :
-          <input id="map-city-display-polygon-size" value="0" class="sm" />以上
+          <input id="map-city-display-polygon-size" value="0" class="sm">以上
         </div>
 
         <div>
@@ -123,30 +123,30 @@
         <button id="map-city-display">表示する</button>
       </div>
 
-      <hr/>
+      <hr>
       <h3 class="toggle">MySQL用</h3>
       <div>
-        <textarea id="map-polygon"></textarea><br/>
+        <textarea id="map-polygon"></textarea><br>
         length: <span id="map-polygon-length"></span>
       </div>
 
-      <hr/>
+      <hr>
       <h3 class="toggle">ポリゴン情報</h3>
       <div>
         <h4>領域数</h4>
-        <input id="map-polygon-count" class="sm" readonly />個<br>
+        <input id="map-polygon-count" class="sm" readonly>個<br>
 
         <hr>
         <h4>重心</h4>
-        <label for="map-center-lat">緯度</label>: <input id="map-center-lat" readonly /><br>
-        <label for="map-center-lng">経度</label>: <input id="map-center-lng" readonly /><br>
+        <label for="map-center-lat">緯度</label>: <input id="map-center-lat" readonly><br>
+        <label for="map-center-lng">経度</label>: <input id="map-center-lng" readonly><br>
         <textarea id="map-center-point"></textarea>
       </div>
 
-      <hr/>
+      <hr>
       <h3 class="toggle">抽出&加工された GeoJson</h3>
       <div>
-        <textarea id="map-geojson-output"></textarea><br/>
+        <textarea id="map-geojson-output"></textarea><br>
         length: <span id="map-geojson-output-length"></span>
       </div>
     </div>
@@ -157,7 +157,6 @@
       id="google-map"
       async
       defer
-      type="text/javascript"
       src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=<%= google_api_key; %>&libraries=geometry,places&region=JP"
     ></script>
   </body>
