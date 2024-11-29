@@ -4,13 +4,14 @@
   "version": "4.0.0",
   "repository": "git@github.com:shimonhaga/geojson-polygon-googlemap.git",
   "license": "MIT",
-  "author": "Shimon Haga <shimon.haga@gmail.com>",
+  "author": "Shimon Haga <shimon.haga@shimoning.com>",
   "homepage": "https://shimon.biz",
   "keywords": [
     "geojson",
     "google map",
     "polygon",
-    "h3"
+    "h3",
+    "reduce"
   ],
   "main": "server.js",
   "engines": {
